@@ -21,7 +21,7 @@ const KanbanCard = ({ card, onUpdate }: KanbanCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description || '');
-  const [priority, setPriority] = useState(card.priority || 'medium');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>(card.priority || 'medium');
   const { toast } = useToast();
 
   const priorityColors = {
@@ -37,7 +37,7 @@ const KanbanCard = ({ card, onUpdate }: KanbanCardProps) => {
       .update({
         title: title.trim(),
         description: description.trim() || null,
-        priority: priority as any,
+        priority: priority,
       })
       .eq('id', card.id);
 
@@ -51,6 +51,10 @@ const KanbanCard = ({ card, onUpdate }: KanbanCardProps) => {
       setIsEditing(false);
       onUpdate();
     }
+  };
+
+  const handlePriorityChange = (value: string) => {
+    setPriority(value as 'low' | 'medium' | 'high' | 'urgent');
   };
 
   return (
@@ -136,7 +140,7 @@ const KanbanCard = ({ card, onUpdate }: KanbanCardProps) => {
             
             <div>
               <label className="text-sm font-medium text-gray-300 mb-2 block">Priority</label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority} onValueChange={handlePriorityChange}>
                 <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                   <SelectValue />
                 </SelectTrigger>
