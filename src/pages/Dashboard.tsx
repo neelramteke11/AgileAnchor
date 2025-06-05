@@ -1,119 +1,199 @@
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tables } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Plus, Search, BarChart3 } from 'lucide-react';
 import ProjectCard from '@/components/ProjectCard';
 import CreateProjectDialog from '@/components/CreateProjectDialog';
-import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 interface DashboardProps {
-  onSelectProject: (project: Tables<'projects'>) => void;
+  onProjectSelect: (project: Tables<'projects'>) => void;
 }
 
-const Dashboard = ({ onSelectProject }: DashboardProps) => {
+const Dashboard = ({ onProjectSelect }: DashboardProps) => {
   const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Tables<'projects'>[]>([]);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchProjects = async () => {
+  const loadProjects = async () => {
     if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('updated_at', { ascending: false });
 
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error: any) {
       toast({
-        title: "Error fetching projects",
+        title: "Error loading projects",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      setProjects(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    fetchProjects();
+    loadProjects();
   }, [user]);
 
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
+  useEffect(() => {
+    let filtered = projects;
+
+    if (searchTerm) {
+      filtered = filtered.filter(project =>
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
     }
-  };
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(project => project.status === statusFilter);
+    }
+
+    setFilteredProjects(filtered);
+  }, [projects, searchTerm, statusFilter]);
+
+  const activeProjects = projects.filter(p => p.status === 'active').length;
+  const archivedProjects = projects.filter(p => p.status === 'archived').length;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="text-gray-400">Loading projects...</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="border-b border-gray-800">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">TrelloClone</h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-gray-300">
-                <User className="h-4 w-4" />
-                <span className="text-sm">{user?.email}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="border-gray-700 text-gray-300 hover:bg-gray-800"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Your Projects</h2>
-            <p className="text-gray-400">Manage your work and collaborate with your team</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Projects</h1>
+            <p className="text-gray-400">Manage your project portfolio</p>
           </div>
-          <CreateProjectDialog onProjectCreated={fetchProjects} />
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Project
+          </Button>
         </div>
 
-        {projects.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-gray-500 mb-4">No projects yet</div>
-            <CreateProjectDialog onProjectCreated={fetchProjects} />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Total Projects</CardTitle>
+              <BarChart3 className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{projects.length}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Active Projects</CardTitle>
+              <div className="w-2 h-2 bg-green-500 rounded-full" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{activeProjects}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Archived Projects</CardTitle>
+              <div className="w-2 h-2 bg-gray-500 rounded-full" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{archivedProjects}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search projects..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-gray-900 border-gray-800 text-white"
+            />
           </div>
+          
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40 bg-gray-900 border-gray-800 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-800">
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Projects Grid */}
+        {filteredProjects.length === 0 ? (
+          <Card className="bg-gray-900 border-gray-800">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <BarChart3 className="h-12 w-12 text-gray-600 mb-4" />
+              <p className="text-gray-400 text-center">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'No projects match your search criteria.' 
+                  : 'No projects yet. Create your first project to get started.'}
+              </p>
+              {!searchTerm && statusFilter === 'all' && (
+                <Button 
+                  onClick={() => setShowCreateDialog(true)}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Project
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {projects.map((project) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}
-                onSelect={onSelectProject}
+                onClick={() => onProjectSelect(project)}
+                onUpdate={loadProjects}
               />
             ))}
           </div>
         )}
+
+        <CreateProjectDialog
+          isOpen={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          onProjectCreated={loadProjects}
+        />
       </div>
     </div>
   );

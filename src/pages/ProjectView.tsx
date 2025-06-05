@@ -1,12 +1,12 @@
 
-import { useState } from 'react';
-import { Tables } from '@/integrations/supabase/types';
 import KanbanBoard from '@/components/KanbanBoard';
 import ProjectNotes from '@/components/ProjectNotes';
 import ProjectLinks from '@/components/ProjectLinks';
+import TaskCalendar from '@/components/TaskCalendar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Kanban, FileText, Link2 } from 'lucide-react';
+import { ArrowLeft, Kanban, FileText, Link2, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tables } from '@/integrations/supabase/types';
 
 interface ProjectViewProps {
   project: Tables<'projects'>;
@@ -44,6 +44,10 @@ const ProjectView = ({ project, onBack }: ProjectViewProps) => {
               <Kanban className="h-4 w-4 mr-2" />
               Board
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="text-gray-300 data-[state=active]:text-white">
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendar
+            </TabsTrigger>
             <TabsTrigger value="notes" className="text-gray-300 data-[state=active]:text-white">
               <FileText className="h-4 w-4 mr-2" />
               Notes
@@ -53,15 +57,19 @@ const ProjectView = ({ project, onBack }: ProjectViewProps) => {
               Links
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="board" className="mt-6">
             <KanbanBoard projectId={project.id} />
           </TabsContent>
-          
+
+          <TabsContent value="calendar" className="mt-6">
+            <TaskCalendar projectId={project.id} />
+          </TabsContent>
+
           <TabsContent value="notes" className="mt-6">
             <ProjectNotes projectId={project.id} />
           </TabsContent>
-          
+
           <TabsContent value="links" className="mt-6">
             <ProjectLinks projectId={project.id} />
           </TabsContent>

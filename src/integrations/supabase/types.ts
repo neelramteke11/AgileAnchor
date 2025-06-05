@@ -47,37 +47,81 @@ export type Database = {
           },
         ]
       }
+      card_comments: {
+        Row: {
+          card_id: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_comments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
+          assigned_to: string | null
           column_id: string
+          comments: Json | null
           created_at: string
           description: string | null
           due_date: string | null
           id: string
           position: number
           priority: Database["public"]["Enums"]["card_priority"] | null
+          tags: string[] | null
           title: string
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           column_id: string
+          comments?: Json | null
           created_at?: string
           description?: string | null
           due_date?: string | null
           id?: string
           position: number
           priority?: Database["public"]["Enums"]["card_priority"] | null
+          tags?: string[] | null
           title: string
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           column_id?: string
+          comments?: Json | null
           created_at?: string
           description?: string | null
           due_date?: string | null
           id?: string
           position?: number
           priority?: Database["public"]["Enums"]["card_priority"] | null
+          tags?: string[] | null
           title?: string
           updated_at?: string
         }
@@ -90,6 +134,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       project_links: {
         Row: {
@@ -157,6 +231,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string | null
+          id: string
+          project_id: string
+          start_time: string | null
+          status: string | null
+          task_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          project_id: string
+          start_time?: string | null
+          status?: string | null
+          task_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          project_id?: string
+          start_time?: string | null
+          status?: string | null
+          task_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

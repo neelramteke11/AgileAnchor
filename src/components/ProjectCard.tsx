@@ -1,55 +1,49 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Calendar, FileText, Link2, MoreVertical } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tables } from '@/integrations/supabase/types';
+import { Calendar } from 'lucide-react';
+import ProjectActionsMenu from './ProjectActionsMenu';
 
 interface ProjectCardProps {
   project: Tables<'projects'>;
-  onSelect: (project: Tables<'projects'>) => void;
+  onClick: () => void;
+  onUpdate: () => void;
 }
 
-const ProjectCard = ({ project, onSelect }: ProjectCardProps) => {
+const ProjectCard = ({ project, onClick, onUpdate }: ProjectCardProps) => {
+  const statusColor = project.status === 'active' ? 'bg-green-600' : 'bg-gray-600';
+  
   return (
-    <Card className="bg-gray-900 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer group">
+    <Card 
+      className="bg-gray-900 border-gray-800 hover:bg-gray-800 transition-colors cursor-pointer group"
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex-1" onClick={() => onSelect(project)}>
-          <CardTitle className="text-lg font-semibold text-white truncate">
-            {project.name}
-          </CardTitle>
-          {project.description && (
-            <CardDescription className="text-gray-400 mt-1 line-clamp-2">
-              {project.description}
-            </CardDescription>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white"
-        >
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent onClick={() => onSelect(project)}>
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{new Date(project.created_at).toLocaleDateString()}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <FileText className="h-3 w-3" />
-              <Link2 className="h-3 w-3" />
-            </div>
-          </div>
-          <div className={`px-2 py-1 rounded-full text-xs ${
-            project.status === 'active' 
-              ? 'bg-green-900 text-green-300' 
-              : 'bg-gray-800 text-gray-400'
-          }`}>
+        <CardTitle className="text-lg font-medium text-white">
+          {project.name}
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Badge className={`${statusColor} text-white`}>
             {project.status}
+          </Badge>
+          <div 
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ProjectActionsMenu project={project} onUpdate={onUpdate} />
           </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {project.description && (
+          <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+            {project.description}
+          </p>
+        )}
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <Calendar className="h-3 w-3" />
+          <span>Created {new Date(project.created_at).toLocaleDateString()}</span>
         </div>
       </CardContent>
     </Card>
