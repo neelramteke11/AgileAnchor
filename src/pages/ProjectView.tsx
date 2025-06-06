@@ -2,9 +2,10 @@
 import KanbanBoard from '@/components/KanbanBoard';
 import ProjectNotes from '@/components/ProjectNotes';
 import ProjectLinks from '@/components/ProjectLinks';
+import ProjectDashboard from '@/components/ProjectDashboard';
 import TaskCalendar from '@/components/TaskCalendar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Kanban, FileText, Link2, Calendar } from 'lucide-react';
+import { ArrowLeft, Kanban, FileText, Link2, Calendar, LayoutDashboard } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -38,8 +39,12 @@ const ProjectView = ({ project, onBack }: ProjectViewProps) => {
       </div>
 
       <div className="container mx-auto px-6 py-6">
-        <Tabs defaultValue="board" className="w-full">
+        <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="bg-gray-900 border-gray-800">
+            <TabsTrigger value="dashboard" className="text-gray-300 data-[state=active]:text-black data-[state=active]:bg-white">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
             <TabsTrigger value="board" className="text-gray-300 data-[state=active]:text-black data-[state=active]:bg-white">
               <Kanban className="h-4 w-4 mr-2" />
               Board
@@ -57,6 +62,10 @@ const ProjectView = ({ project, onBack }: ProjectViewProps) => {
               Links
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard" className="mt-6">
+            <ProjectDashboard projectId={project.id} project={project} />
+          </TabsContent>
 
           <TabsContent value="board" className="mt-6">
             <KanbanBoard projectId={project.id} />

@@ -101,7 +101,7 @@ const Dashboard = ({ onSelectProject }: DashboardProps) => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-[#6f1d1b] border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Total Projects</CardTitle>
               <BarChart3 className="h-4 w-4 text-gray-400" />
@@ -111,7 +111,7 @@ const Dashboard = ({ onSelectProject }: DashboardProps) => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-[#432818] border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Active Projects</CardTitle>
               <div className="w-2 h-2 bg-green-500 rounded-full" />
@@ -121,7 +121,7 @@ const Dashboard = ({ onSelectProject }: DashboardProps) => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-[#432818] border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Archived Projects</CardTitle>
               <div className="w-2 h-2 bg-gray-500 rounded-full" />

@@ -6,20 +6,16 @@ import { Button } from "@/components/ui/button";
 
 const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-const CalendarDay: React.FC<{ day: number | string; isHeader?: boolean }> = ({
+const CalendarDay: React.FC<{ day: number | string; isHeader?: boolean; isSelected?: boolean }> = ({
   day,
   isHeader,
+  isSelected,
 }) => {
-  const randomBgWhite =
-    !isHeader && Math.random() < 0.3
-      ? "bg-indigo-500 text-white "
-      : "text-gray-400";
-
   return (
     <div
-      className={`col-span-1 row-span-1 flex h-8 w-8 items-center justify-center ${
-        isHeader ? "" : "rounded-xl"
-      } ${randomBgWhite}`}
+      className={`col-span-1 row-span-1 flex h-10 w-10 items-center justify-center ${
+        isHeader ? "" : "rounded-full"
+      } ${isSelected ? "bg-indigo-500 text-white" : "text-gray-400"}`}
     >
       <span className={`font-medium ${isHeader ? "text-xs" : "text-sm"}`}>
         {day}
@@ -101,6 +97,8 @@ export function BentoCard({
 }
 
 export function Calendar() {
+  const selectedDays = [4, 7, 11, 15, 20, 24, 28]; // These days will be shown as selected
+  
   const currentDate = new Date();
   const currentMonth = currentDate.toLocaleString("default", { month: "long" });
   const currentYear = currentDate.getFullYear();
@@ -122,53 +120,34 @@ export function Calendar() {
       ...Array(firstDayOfWeek).map((_, i) => (
         <div
           key={`empty-start-${i}`}
-          className="col-span-1 row-span-1 h-8 w-8"
+          className="col-span-1 row-span-1 h-10 w-10"
         />
       )),
       ...Array(daysInMonth)
         .fill(null)
-        .map((_, i) => <CalendarDay key={`date-${i + 1}`} day={i + 1} />),
+        .map((_, i) => (
+          <CalendarDay 
+            key={`date-${i + 1}`} 
+            day={i + 1} 
+            isSelected={selectedDays.includes(i + 1)}
+          />
+        )),
     ];
 
     return days;
   };
 
   return (
-    <BentoCard height="h-auto" linkTo={bookingLink}>
-      <div className="grid h-full gap-5">
+    <div className="rounded-3xl border border-gray-800 bg-black p-4 shadow-lg">
+      <div className="mb-2 flex justify-between">
         <div>
-          <h2 className="mb-4 text-lg md:text-3xl font-semibold text-white">
-            Any questions about Design?
-          </h2>
-          <p className="mb-2 text-xs md:text-md text-gray-400">
-            Feel free to reach out to me!
-          </p>
-          <Button className="mt-3 rounded-2xl">Book Now</Button>
+          <h2 className="text-lg font-medium text-white">June, 2025</h2>
         </div>
-        <div className="transition-all duration-500 ease-out md:group-hover:-right-12 md:group-hover:top-5">
-          <div>
-            <div className="h-full w-[550px] rounded-[24px] border border-gray-700 p-2 transition-colors duration-100 group-hover:border-indigo-400">
-              <div
-                className="h-full rounded-2xl border-2 border-gray-700/10 p-3"
-                style={{ boxShadow: "0px 2px 1.5px 0px rgba(165, 174, 184, 0.32) inset" }}
-              >
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm text-white">
-                    <span className="font-medium">
-                      {currentMonth}, {currentYear}
-                    </span>
-                  </p>
-                  <span className="h-1 w-1 rounded-full">&nbsp;</span>
-                  <p className="text-xs text-gray-400">30 min call</p>
-                </div>
-                <div className="mt-4 grid grid-cols-7 grid-rows-5 gap-2 px-4">
-                  {renderCalendarDays()}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <p className="text-xs text-gray-400">30 min call</p>
       </div>
-    </BentoCard>
+      <div className="grid grid-cols-7 gap-2 px-2">
+        {renderCalendarDays()}
+      </div>
+    </div>
   );
 }
