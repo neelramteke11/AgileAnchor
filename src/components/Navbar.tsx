@@ -1,19 +1,16 @@
-
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { LayoutDashboard, Settings, Home } from 'lucide-react';
-
 const Navbar = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const location = useLocation();
-
   if (!user) {
     return null;
   }
-
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+  return <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -22,44 +19,24 @@ const Navbar = () => {
             </Link>
             <div className="flex space-x-4">
               <Link to="/">
-                <Button 
-                  variant="ghost" 
-                  className={`text-gray-300 hover:text-white ${
-                    location.pathname === '/' ? 'bg-gray-800 text-white' : ''
-                  }`}
-                >
+                <Button variant="ghost" className={`text-gray-300 hover:text-white ${location.pathname === '/' ? 'bg-gray-800 text-white' : ''}`}>
                   <Home className="h-4 w-4 mr-2" />
                   Home
                 </Button>
               </Link>
               <Link to="/dashboard">
-                <Button 
-                  variant="ghost" 
-                  className={`text-gray-300 hover:text-white ${
-                    location.pathname === '/dashboard' ? 'bg-gray-800 text-white' : ''
-                  }`}
-                >
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
+                
               </Link>
             </div>
           </div>
           <Link to="/settings">
-            <Button 
-              variant="ghost" 
-              className={`text-gray-300 hover:text-white ${
-                location.pathname === '/settings' ? 'bg-gray-800 text-white' : ''
-              }`}
-            >
+            <Button variant="ghost" className={`text-gray-300 hover:text-white ${location.pathname === '/settings' ? 'bg-gray-800 text-white' : ''}`}>
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </Button>
           </Link>
         </div>
       </div>
-    </nav>
-  );
+    </nav>;
 };
-
 export default Navbar;
