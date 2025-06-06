@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -65,30 +64,41 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
     if (!card) return;
 
     try {
-      const { data, error } = await supabase
+      // First get the comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('card_comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles!card_comments_user_id_fkey (
-            id,
-            first_name,
-            last_name
-          )
-        `)
+        .select('id, content, created_at, user_id')
         .eq('card_id', card.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
+
+      // Then get the profiles for each unique user_id
+      const userIds = [...new Set(commentsData?.map(comment => comment.user_id) || [])];
       
-      const transformedComments: Comment[] = (data || []).map(comment => ({
+      let profilesMap: Record<string, Profile> = {};
+      
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        profilesMap = (profilesData || []).reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, Profile>);
+      }
+
+      // Combine comments with profiles
+      const transformedComments: Comment[] = (commentsData || []).map(comment => ({
         id: comment.id,
         content: comment.content,
         created_at: comment.created_at,
         user_id: comment.user_id,
-        profiles: comment.profiles as Profile | null
+        profiles: profilesMap[comment.user_id] || null
       }));
       
       setComments(transformedComments);
