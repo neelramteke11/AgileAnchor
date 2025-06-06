@@ -13,10 +13,10 @@ import ProjectCard from '@/components/ProjectCard';
 import CreateProjectDialog from '@/components/CreateProjectDialog';
 
 interface DashboardProps {
-  onProjectSelect: (project: Tables<'projects'>) => void;
+  onSelectProject: (project: Tables<'projects'>) => void;
 }
 
-const Dashboard = ({ onProjectSelect }: DashboardProps) => {
+const Dashboard = ({ onSelectProject }: DashboardProps) => {
   const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Tables<'projects'>[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -34,6 +34,7 @@ const Dashboard = ({ onProjectSelect }: DashboardProps) => {
         .from('projects')
         .select('*')
         .eq('user_id', user.id)
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -182,7 +183,7 @@ const Dashboard = ({ onProjectSelect }: DashboardProps) => {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onClick={() => onProjectSelect(project)}
+                onClick={() => onSelectProject(project)}
                 onUpdate={loadProjects}
               />
             ))}
@@ -190,8 +191,8 @@ const Dashboard = ({ onProjectSelect }: DashboardProps) => {
         )}
 
         <CreateProjectDialog
-          isOpen={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
           onProjectCreated={loadProjects}
         />
       </div>

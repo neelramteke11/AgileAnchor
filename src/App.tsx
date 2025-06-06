@@ -76,7 +76,7 @@ function AppContent() {
                 onBack={() => setSelectedProject(null)} 
               />
             ) : (
-              <Dashboard onProjectSelect={setSelectedProject} />
+              <Dashboard onSelectProject={setSelectedProject} />
             )
           } 
         />

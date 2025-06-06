@@ -6,18 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tables } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Tag, MessageCircle, X, Plus, Calendar } from 'lucide-react';
-
-interface CardDetailsDialogProps {
-  card: Tables<'cards'> | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onUpdate: () => void;
-}
+import { useAuth } from '@/hooks/useAuth';
+import { Tables } from '@/integrations/supabase/types';
+import { X, Plus, User, Calendar } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -30,90 +23,116 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profiles?: Profile;
+  profiles: Profile;
+}
+
+type CardPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+interface CardDetailsDialogProps {
+  card: Tables<'cards'> | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: () => void;
 }
 
 const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialogProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [assignedTo, setAssignedTo] = useState<string>('');
+  const [priority, setPriority] = useState<CardPriority>('medium');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [assignedTo, setAssignedTo] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (card) {
       setTitle(card.title);
       setDescription(card.description || '');
-      setAssignedTo(card.assigned_to || '');
+      setPriority((card.priority as CardPriority) || 'medium');
       setTags(card.tags || []);
-      setPriority(card.priority || 'medium');
+      setAssignedTo(card.assigned_to || '');
       setDueDate(card.due_date ? new Date(card.due_date).toISOString().split('T')[0] : '');
       loadComments();
     }
   }, [card]);
 
-  useEffect(() => {
-    loadProfiles();
-  }, []);
-
-  const loadProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('*');
-    setProfiles(data || []);
-  };
-
   const loadComments = async () => {
     if (!card) return;
-    
-    const { data } = await supabase
-      .from('card_comments')
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          first_name,
-          last_name
-        )
-      `)
-      .eq('card_id', card.id)
-      .order('created_at', { ascending: true });
-    
-    setComments(data || []);
+
+    try {
+      const { data, error } = await supabase
+        .from('card_comments')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('card_id', card.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      
+      // Transform the data to match our Comment interface
+      const transformedComments = (data || []).map(comment => ({
+        id: comment.id,
+        content: comment.content,
+        created_at: comment.created_at,
+        user_id: comment.user_id,
+        profiles: comment.profiles as Profile
+      }));
+      
+      setComments(transformedComments);
+    } catch (error: any) {
+      toast({
+        title: "Error loading comments",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSave = async () => {
-    if (!card) return;
+    if (!card || !user) return;
 
-    const { error } = await supabase
-      .from('cards')
-      .update({
-        title,
-        description: description || null,
-        assigned_to: assignedTo || null,
-        tags,
-        priority,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
-      })
-      .eq('id', card.id);
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('cards')
+        .update({
+          title,
+          description,
+          priority,
+          tags,
+          assigned_to: assignedTo || null,
+          due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        })
+        .eq('id', card.id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast({
+        title: "Card updated",
+        description: "Card details have been saved successfully.",
+      });
+
+      onUpdate();
+      onClose();
+    } catch (error: any) {
       toast({
         title: "Error updating card",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Card updated",
-        description: "Your changes have been saved.",
-      });
-      onUpdate();
-      onClose();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,38 +148,50 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
   };
 
   const addComment = async () => {
-    if (!card || !newComment.trim()) return;
+    if (!newComment.trim() || !card || !user) return;
 
-    const { error } = await supabase
-      .from('card_comments')
-      .insert({
-        card_id: card.id,
-        content: newComment.trim(),
-        user_id: (await supabase.auth.getUser()).data.user?.id!,
+    try {
+      const { error } = await supabase
+        .from('card_comments')
+        .insert({
+          card_id: card.id,
+          user_id: user.id,
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+
+      setNewComment('');
+      loadComments();
+
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully.",
       });
-
-    if (error) {
+    } catch (error: any) {
       toast({
         title: "Error adding comment",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      setNewComment('');
-      loadComments();
     }
+  };
+
+  const handlePriorityChange = (value: string) => {
+    setPriority(value as CardPriority);
   };
 
   if (!card) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-gray-900 border-gray-800">
+      <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-white">Card Details</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Card Details</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
+          {/* Title */}
           <div>
             <label className="text-sm font-medium text-gray-300">Title</label>
             <Input
@@ -170,6 +201,7 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
             />
           </div>
 
+          {/* Description */}
           <div>
             <label className="text-sm font-medium text-gray-300">Description</label>
             <Textarea
@@ -180,10 +212,11 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
             />
           </div>
 
+          {/* Priority and Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-300">Priority</label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority} onValueChange={handlePriorityChange}>
                 <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                   <SelectValue />
                 </SelectTrigger>
@@ -207,37 +240,35 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
             </div>
           </div>
 
+          {/* Assigned To */}
           <div>
             <label className="text-sm font-medium text-gray-300">Assigned To</label>
-            <Select value={assignedTo} onValueChange={setAssignedTo}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                <SelectValue placeholder="Select assignee" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="">Unassigned</SelectItem>
-                {profiles.map((profile) => (
-                  <SelectItem key={profile.id} value={profile.id}>
-                    {profile.first_name || profile.last_name 
-                      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-                      : profile.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-gray-400" />
+              <Input
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                placeholder="User ID or email"
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
           </div>
 
+          {/* Tags */}
           <div>
             <label className="text-sm font-medium text-gray-300">Tags</label>
-            <div className="flex gap-2 mb-2 flex-wrap">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="bg-blue-600 text-white">
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tags.map((tag, index) => (
+                <Badge key={index} className="bg-blue-600 text-white">
                   {tag}
-                  <button
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => removeTag(tag)}
-                    className="ml-1 hover:text-red-300"
+                    className="ml-1 h-4 w-4 p-0 hover:bg-blue-700"
                   >
                     <X className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </Badge>
               ))}
             </div>
@@ -245,7 +276,7 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
               <Input
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Add tag..."
+                placeholder="Add a tag..."
                 className="bg-gray-800 border-gray-700 text-white"
                 onKeyPress={(e) => e.key === 'Enter' && addTag()}
               />
@@ -255,49 +286,45 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
             </div>
           </div>
 
+          {/* Comments */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Comments</label>
-            <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-4 space-y-3">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="border-b border-gray-700 pb-2 last:border-b-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">
-                        {comment.profiles?.first_name || comment.profiles?.last_name 
-                          ? `${comment.profiles.first_name || ''} ${comment.profiles.last_name || ''}`.trim()
-                          : 'User'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(comment.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-gray-300 text-sm">{comment.content}</p>
+            <label className="text-sm font-medium text-gray-300">Comments</label>
+            <div className="space-y-3 mb-3 max-h-48 overflow-y-auto">
+              {comments.map((comment) => (
+                <div key={comment.id} className="bg-gray-800 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-blue-400">
+                      {comment.profiles?.first_name || 'Unknown User'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </span>
                   </div>
-                ))}
-                
-                <div className="flex gap-2 pt-2">
-                  <Textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="bg-gray-700 border-gray-600 text-white"
-                    rows={2}
-                  />
-                  <Button onClick={addComment} size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
+                  <p className="text-sm text-gray-300">{comment.content}</p>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="bg-gray-800 border-gray-700 text-white"
+                onKeyPress={(e) => e.key === 'Enter' && addComment()}
+              />
+              <Button onClick={addComment} size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-          <div className="flex gap-2 justify-end">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-2 pt-4 border-t border-gray-700">
             <Button variant="outline" onClick={onClose} className="border-gray-700 text-gray-300">
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              Save Changes
+            <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+              {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

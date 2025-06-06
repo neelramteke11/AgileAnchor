@@ -6,10 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tables } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MoreVertical, Edit, Trash2, Archive, Play, Pause } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
+import { MoreVertical, Edit, Trash2, Archive, RotateCcw } from 'lucide-react';
+
+type ProjectStatus = 'active' | 'archived' | 'deleted';
 
 interface ProjectActionsMenuProps {
   project: Tables<'projects'>;
@@ -19,149 +21,158 @@ interface ProjectActionsMenuProps {
 const ProjectActionsMenu = ({ project, onUpdate }: ProjectActionsMenuProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [editName, setEditName] = useState(project.name);
-  const [editDescription, setEditDescription] = useState(project.description || '');
-  const [editStatus, setEditStatus] = useState(project.status);
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description || '');
+  const [status, setStatus] = useState<ProjectStatus>(project.status as ProjectStatus);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleEdit = async () => {
-    const { error } = await supabase
-      .from('projects')
-      .update({
-        name: editName,
-        description: editDescription || null,
-        status: editStatus,
-      })
-      .eq('id', project.id);
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ name, description, status })
+        .eq('id', project.id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast({
+        title: "Project updated",
+        description: "Project has been updated successfully.",
+      });
+
+      onUpdate();
+      setShowEditDialog(false);
+    } catch (error: any) {
       toast({
         title: "Error updating project",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Project updated",
-        description: "Your changes have been saved.",
-      });
-      setShowEditDialog(false);
-      onUpdate();
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', project.id);
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ status: 'deleted' })
+        .eq('id', project.id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast({
+        title: "Project deleted",
+        description: "Project has been moved to trash.",
+      });
+
+      onUpdate();
+      setShowDeleteDialog(false);
+    } catch (error: any) {
       toast({
         title: "Error deleting project",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Project deleted",
-        description: "The project has been removed.",
-      });
-      setShowDeleteDialog(false);
-      onUpdate();
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleStatus = async () => {
-    const newStatus = project.status === 'active' ? 'archived' : 'active';
-    
-    const { error } = await supabase
-      .from('projects')
-      .update({ status: newStatus })
-      .eq('id', project.id);
+  const handleStatusChange = async (newStatus: ProjectStatus) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ status: newStatus })
+        .eq('id', project.id);
 
-    if (error) {
+      if (error) throw error;
+
       toast({
-        title: "Error updating project status",
+        title: "Project status updated",
+        description: `Project is now ${newStatus}.`,
+      });
+
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Error updating status",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Project status updated",
-        description: `Project ${newStatus === 'active' ? 'activated' : 'archived'}.`,
-      });
-      onUpdate();
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleStatusChangeValue = (value: string) => {
+    setStatus(value as ProjectStatus);
   };
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="bg-gray-900 border-gray-800">
-          <DropdownMenuItem 
-            onClick={() => setShowEditDialog(true)}
-            className="text-gray-300 hover:bg-gray-800"
-          >
+          <DropdownMenuItem onClick={() => setShowEditDialog(true)} className="text-white hover:bg-gray-800">
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={toggleStatus}
-            className="text-gray-300 hover:bg-gray-800"
-          >
-            {project.status === 'active' ? (
-              <>
-                <Archive className="h-4 w-4 mr-2" />
-                Archive
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4 mr-2" />
-                Activate
-              </>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-red-400 hover:bg-gray-800"
-          >
+          {project.status === 'active' && (
+            <DropdownMenuItem onClick={() => handleStatusChange('archived')} className="text-white hover:bg-gray-800">
+              <Archive className="h-4 w-4 mr-2" />
+              Archive
+            </DropdownMenuItem>
+          )}
+          {project.status === 'archived' && (
+            <DropdownMenuItem onClick={() => handleStatusChange('active')} className="text-white hover:bg-gray-800">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restore
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-400 hover:bg-gray-800">
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="bg-gray-900 border-gray-800">
+        <DialogContent className="bg-gray-900 border-gray-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">Edit Project</DialogTitle>
+            <DialogTitle>Edit Project</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-300">Name</label>
               <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="bg-gray-800 border-gray-700 text-white"
               />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-300">Description</label>
               <Textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="bg-gray-800 border-gray-700 text-white"
+                rows={3}
               />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-300">Status</label>
-              <Select value={editStatus} onValueChange={setEditStatus}>
+              <Select value={status} onValueChange={handleStatusChangeValue}>
                 <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                   <SelectValue />
                 </SelectTrigger>
@@ -171,44 +182,36 @@ const ProjectActionsMenu = ({ project, onUpdate }: ProjectActionsMenuProps) => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowEditDialog(false)}
-                className="border-gray-700 text-gray-300"
-              >
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} className="border-gray-700 text-gray-300">
                 Cancel
               </Button>
-              <Button onClick={handleEdit} className="bg-blue-600 hover:bg-blue-700">
-                Save Changes
+              <Button onClick={handleEdit} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+                {loading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="bg-gray-900 border-gray-800">
+        <DialogContent className="bg-gray-900 border-gray-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">Delete Project</DialogTitle>
+            <DialogTitle>Delete Project</DialogTitle>
           </DialogHeader>
-          <p className="text-gray-300">
-            Are you sure you want to delete "{project.name}"? This action cannot be undone.
-          </p>
-          <div className="flex gap-2 justify-end">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowDeleteDialog(false)}
-              className="border-gray-700 text-gray-300"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleDelete} 
-              variant="destructive"
-            >
-              Delete Project
-            </Button>
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              Are you sure you want to delete "{project.name}"? This action will move the project to trash.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)} className="border-gray-700 text-gray-300">
+                Cancel
+              </Button>
+              <Button onClick={handleDelete} disabled={loading} className="bg-red-600 hover:bg-red-700">
+                {loading ? 'Deleting...' : 'Delete Project'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
