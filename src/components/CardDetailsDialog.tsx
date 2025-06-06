@@ -23,7 +23,7 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profiles: Profile;
+  profiles: Profile | null;
 }
 
 type CardPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -68,8 +68,11 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
       const { data, error } = await supabase
         .from('card_comments')
         .select(`
-          *,
-          profiles:user_id (
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles!card_comments_user_id_fkey (
             id,
             first_name,
             last_name
@@ -80,17 +83,17 @@ const CardDetailsDialog = ({ card, isOpen, onClose, onUpdate }: CardDetailsDialo
 
       if (error) throw error;
       
-      // Transform the data to match our Comment interface
-      const transformedComments = (data || []).map(comment => ({
+      const transformedComments: Comment[] = (data || []).map(comment => ({
         id: comment.id,
         content: comment.content,
         created_at: comment.created_at,
         user_id: comment.user_id,
-        profiles: comment.profiles as Profile
+        profiles: comment.profiles as Profile | null
       }));
       
       setComments(transformedComments);
     } catch (error: any) {
+      console.error('Error loading comments:', error);
       toast({
         title: "Error loading comments",
         description: error.message,
