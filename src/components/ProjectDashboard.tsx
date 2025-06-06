@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tables } from '@/integrations/supabase/types';
 import { Calendar, ClipboardList, CheckSquare, Clock, AlertCircle } from 'lucide-react';
-import { Calendar as CustomCalendar } from '@/components/ui/calendar-custom';
 
 interface ProjectDashboardProps {
   projectId: string;
@@ -116,7 +115,9 @@ const ProjectDashboard = ({ projectId, project }: ProjectDashboardProps) => {
             <CardTitle className="text-white">Calendar</CardTitle>
           </CardHeader>
           <CardContent>
-            <CustomCalendar />
+            <div className="flex items-center justify-center text-gray-400">
+              <p>7 upcoming tasks this month</p>
+            </div>
           </CardContent>
         </Card>
       </div>
