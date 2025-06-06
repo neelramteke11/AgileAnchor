@@ -64,7 +64,7 @@ const Auth = () => {
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-gray-900 border-gray-800">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-white">TrelloClone</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">⚓AgileAnchor</CardTitle>
           <CardDescription className="text-gray-400">
             Sign in to your account or create a new one
           </CardDescription>
@@ -72,10 +72,10 @@ const Auth = () => {
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-gray-800">
-              <TabsTrigger value="signin" className="text-white data-[state=active]:bg-gray-700">
+              <TabsTrigger value="signin" className="text-white data-[state=active]:bg-gray-700 data-[state=active]:text-black">
                 Sign In
               </TabsTrigger>
-              <TabsTrigger value="signup" className="text-white data-[state=active]:bg-gray-700">
+              <TabsTrigger value="signup" className="text-white data-[state=active]:bg-gray-700 data-[state=active]:text-black">
                 Sign Up
               </TabsTrigger>
             </TabsList>

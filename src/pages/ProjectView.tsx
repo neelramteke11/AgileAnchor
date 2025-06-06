@@ -40,19 +40,19 @@ const ProjectView = ({ project, onBack }: ProjectViewProps) => {
       <div className="container mx-auto px-6 py-6">
         <Tabs defaultValue="board" className="w-full">
           <TabsList className="bg-gray-900 border-gray-800">
-            <TabsTrigger value="board" className="text-gray-300 data-[state=active]:text-white">
+            <TabsTrigger value="board" className="text-gray-300 data-[state=active]:text-black data-[state=active]:bg-white">
               <Kanban className="h-4 w-4 mr-2" />
               Board
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="text-gray-300 data-[state=active]:text-white">
+            <TabsTrigger value="calendar" className="text-gray-300 data-[state=active]:text-black data-[state=active]:bg-white">
               <Calendar className="h-4 w-4 mr-2" />
               Calendar
             </TabsTrigger>
-            <TabsTrigger value="notes" className="text-gray-300 data-[state=active]:text-white">
+            <TabsTrigger value="notes" className="text-gray-300 data-[state=active]:text-black data-[state=active]:bg-white">
               <FileText className="h-4 w-4 mr-2" />
               Notes
             </TabsTrigger>
-            <TabsTrigger value="links" className="text-gray-300 data-[state=active]:text-white">
+            <TabsTrigger value="links" className="text-gray-300 data-[state=active]:text-black data-[state=active]:bg-white">
               <Link2 className="h-4 w-4 mr-2" />
               Links
             </TabsTrigger>
