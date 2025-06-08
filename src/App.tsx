@@ -18,7 +18,10 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="text-white text-center">
+          <div className="text-2xl font-bold mb-2">⚓AgileAnchor</div>
+          <div>Loading...</div>
+        </div>
       </div>
     );
   }
@@ -30,7 +33,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-black">
       <Navbar />
-      <div className="pt-20">
+      <div className="pt-16 sm:pt-20">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route 
