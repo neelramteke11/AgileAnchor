@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,10 +28,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
+    // Check for existing session with error handling for invalid refresh tokens
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(async (error) => {
+      // Handle invalid refresh token errors
+      if (error?.message?.includes('Invalid Refresh Token') || 
+          error?.message?.includes('refresh_token_not_found')) {
+        // Clear the invalid session data
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     });
 
