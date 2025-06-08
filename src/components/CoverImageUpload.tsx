@@ -24,26 +24,49 @@ const CoverImageUpload = ({ project, onUpdate }: CoverImageUploadProps) => {
     try {
       setUploading(true);
       
+      console.log('Starting upload for project:', project.id);
+      console.log('File details:', { name: file.name, size: file.size, type: file.type });
+      
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${project.user_id}/${fileName}`;
+      const fileName = `${project.id}-${Date.now()}.${fileExt}`;
+      
+      console.log('Uploading to path:', fileName);
 
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('project-covers')
-        .upload(filePath, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('project-covers')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
+      console.log('Public URL:', publicUrl);
+
+      // Update the project with the cover image URL
       const { error: updateError } = await supabase
         .from('projects')
-        .update({ cover_image: publicUrl } as any)
+        .update({ 
+          cover_image: publicUrl,
+          updated_at: new Date().toISOString()
+        } as any)
         .eq('id', project.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw updateError;
+      }
+
+      console.log('Project updated successfully');
 
       toast({
         title: "Success",
@@ -52,9 +75,10 @@ const CoverImageUpload = ({ project, onUpdate }: CoverImageUploadProps) => {
       
       onUpdate();
     } catch (error: any) {
+      console.error('Full error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || 'Failed to upload cover image',
         variant: "destructive",
       });
     } finally {
@@ -64,9 +88,26 @@ const CoverImageUpload = ({ project, onUpdate }: CoverImageUploadProps) => {
 
   const removeCoverImage = async () => {
     try {
+      // If there's an existing cover image, try to delete it from storage
+      if (project.cover_image) {
+        const fileName = project.cover_image.split('/').pop();
+        if (fileName) {
+          const { error: deleteError } = await supabase.storage
+            .from('project-covers')
+            .remove([fileName]);
+          
+          if (deleteError) {
+            console.warn('Could not delete old file:', deleteError);
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('projects')
-        .update({ cover_image: null } as any)
+        .update({ 
+          cover_image: null,
+          updated_at: new Date().toISOString()
+        } as any)
         .eq('id', project.id);
 
       if (error) throw error;
@@ -110,16 +151,27 @@ const CoverImageUpload = ({ project, onUpdate }: CoverImageUploadProps) => {
           <div className="mt-2">
             <label htmlFor="cover-upload" className="cursor-pointer">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Click to upload cover image
+                Click to upload cover image (JPG, PNG, GIF)
               </span>
               <Input
                 id="cover-upload"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) uploadCoverImage(file);
+                  if (file) {
+                    // Check file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast({
+                        title: "Error",
+                        description: "File size must be less than 5MB",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    uploadCoverImage(file);
+                  }
                 }}
                 disabled={uploading}
               />
