@@ -12,8 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tables } from '@/integrations/supabase/types';
 import { useState } from 'react';
 
+interface ProjectWithCover extends Tables<'projects'> {
+  cover_image?: string;
+}
+
 interface ProjectViewProps {
-  project: Tables<'projects'>;
+  project: ProjectWithCover;
   onBack: () => void;
   onUpdate?: () => void;
 }

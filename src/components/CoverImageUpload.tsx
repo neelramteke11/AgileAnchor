@@ -7,8 +7,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, X } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 
+interface ProjectWithCover extends Tables<'projects'> {
+  cover_image?: string;
+}
+
 interface CoverImageUploadProps {
-  project: Tables<'projects'>;
+  project: ProjectWithCover;
   onUpdate: () => void;
 }
 
@@ -36,7 +40,7 @@ const CoverImageUpload = ({ project, onUpdate }: CoverImageUploadProps) => {
 
       const { error: updateError } = await supabase
         .from('projects')
-        .update({ cover_image: publicUrl })
+        .update({ cover_image: publicUrl } as any)
         .eq('id', project.id);
 
       if (updateError) throw updateError;
@@ -62,7 +66,7 @@ const CoverImageUpload = ({ project, onUpdate }: CoverImageUploadProps) => {
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ cover_image: null })
+        .update({ cover_image: null } as any)
         .eq('id', project.id);
 
       if (error) throw error;

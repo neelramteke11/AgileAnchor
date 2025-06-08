@@ -2,8 +2,12 @@
 import React from 'react';
 import { Tables } from '@/integrations/supabase/types';
 
+interface ProjectWithCover extends Tables<'projects'> {
+  cover_image?: string;
+}
+
 interface ProjectCoverProps {
-  project: Tables<'projects'>;
+  project: ProjectWithCover;
   children?: React.ReactNode;
 }
 

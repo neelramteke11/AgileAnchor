@@ -5,13 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import Dashboard from '@/pages/Dashboard';
 import ProjectView from '@/pages/ProjectView';
 
+interface ProjectWithCover extends Tables<'projects'> {
+  cover_image?: string;
+}
+
 const Index = () => {
-  const [selectedProject, setSelectedProject] = useState<Tables<'projects'> | null>(null);
-  const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
+  const [selectedProject, setSelectedProject] = useState<ProjectWithCover | null>(null);
+  const [projects, setProjects] = useState<ProjectWithCover[]>([]);
 
   const loadProjects = async () => {
     const { data } = await supabase.from('projects').select('*');
-    if (data) setProjects(data);
+    if (data) setProjects(data as ProjectWithCover[]);
   };
 
   const handleProjectUpdate = () => {
