@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -6,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +32,13 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
+      // Store remember me preference
+      if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberMe');
+      }
+      
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
@@ -104,20 +113,48 @@ const Auth = () => {
                       required
                       className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 h-11 text-base"
                     />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 h-11 text-base"
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 h-11 text-base pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <label
+                      htmlFor="remember-me"
+                      className="text-sm text-gray-300 cursor-pointer"
+                    >
+                      Keep me logged in
+                    </label>
+                  </div>
+                  
                   <Button 
                     type="submit" 
                     className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base"
                     disabled={loading}
-                    glowColors={['#3b82f6', '#1d4ed8', '#1e40af', '#2563eb']}
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
@@ -136,20 +173,32 @@ const Auth = () => {
                       required
                       className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 h-11 text-base"
                     />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 h-11 text-base"
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 h-11 text-base pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <Button 
                     type="submit" 
                     className="w-full bg-green-600 hover:bg-green-700 h-11 text-base"
                     disabled={loading}
-                    glowColors={['#16a34a', '#15803d', '#166534', '#22c55e']}
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign Up
